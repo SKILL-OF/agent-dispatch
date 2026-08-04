@@ -1,8 +1,6 @@
 ---
 name: agent-dispatch
-description: Launch, resume, and track externally-launched CLI coding-agent sidecars (Claude Code, Codex, Copilot CLI) with consistent permissions, working directory, and telemetry
-scope: Any agent that needs to dispatch a genuinely separate CLI-agent process (not a same-thread subagent) and later answer "what did I launch, and did I ever resume it"
-trigger: Before shelling out to `claude`, `codex`, or `copilot` as a sidecar process, or before asking "has this session been resumed / what have I dispatched so far"
+description: Launch, resume, prompt, and track externally-launched CLI coding-agent sidecars (Claude Code, Codex, Copilot CLI) with consistent permissions, working directory, telemetry, disclosure-state records, and prompt-contamination hygiene. Use before shelling out to claude, codex, or copilot as a sidecar process; before asking what sessions were launched or resumed; or when composing prompts for separate agent processes where identity, continuity, model, role, or prior-context claims could be accidentally primed.
 ---
 
 # Agent Dispatch
@@ -21,6 +19,31 @@ This skill is the discipline of doing that consistently: one declarative manifes
 4. **Write the ledger record when the dispatch starts, not reconstructed afterward.** The point of the ledger is to make "what have I launched" a solved problem; if it's only ever populated retroactively, it degrades back into the same archaeology it's meant to replace.
 5. **The launch CWD is always a real, named folder** — typically a git working-copy root. Any further axis-based nesting (role × harness × branch, etc.) is created by the dispatch script itself *beneath* that CWD, never as the CWD's own name. A bare `_` as a terminal/leaf folder name is a known collision risk in git's own worktree metadata naming.
 6. **Don't confer a persistent identity (a 🍍/pineapple card, in this ecosystem's own terms) casually.** Dispatch produces a resumable session ID; that's a mechanical fact. Deciding a given dispatch deserves an ongoing, accountable identity — one that matters to the dispatching agent *and* signals something to the dispatched agent about its own durability — is a separate, deliberate decision this skill does not make automatically.
+7. **Treat prompt text as an experimental variable.** A dispatched agent's answer is shaped by what it has been shown. Track which facts, examples, labels, and candidate conclusions have been revealed, and do not contaminate an identity, continuity, or capability probe by naming the categories you hope to test.
+
+## Prompt hygiene for agent-facing dispatch
+
+Before sending a prompt to another agent, separate parent-side control from child-facing context.
+
+- Keep parent strategy, private assessments, routing logic, evaluation criteria, and "what this proves" in the parent ledger unless the dispatched agent needs them to execute the task.
+- State evidence boundaries explicitly. Ask the agent to distinguish direct observations, supplied context, inference, uncertainty, and unavailable evidence.
+- Ask for direct observations before asking for interpretation. Prefer "what can you see, recall, or verify?" over "are you a fork, sidecar, or station?"
+- Do not prime identity labels, role names, card ids, model claims, promotion status, diagnoses, or expected conclusions unless those are already known to the dispatched agent or required for the work.
+- Do not use negated labels as a substitute for neutrality. "Do not claim X" still introduces X.
+- Do not ask a dispatched agent to justify its usefulness or continued existence. Prefer bounded operational asks: status, evidence, uncertainty, gaps, and next handoff.
+- When a task concerns another agent's history or identity, use a two-pass prompt: first gather unstructured memory/evidence, then ask classification questions only after the agent has given its own account.
+- Give the agent the minimum operational envelope it needs: scope, output format, write permissions, contact permissions, and stop condition.
+- Record disclosure state in the ledger: what the agent was shown, what was withheld, what was parent-side-only, what was user-stated, and what remains unverified.
+
+Clean first prompt pattern:
+
+```text
+You are a research scout with prior context, but treat that context as unverified background.
+Investigate the assigned sources independently. First report direct observations with source
+locations; then separate inferences and uncertainties. Do not adopt candidate identities or
+conclusions supplied by the parent. Return a concise report with findings, gaps, and
+recommended next steps. Do not edit files or contact other agents unless explicitly authorized.
+```
 
 ## Manifest shape
 
@@ -32,7 +55,13 @@ This skill is the discipline of doing that consistently: one declarative manifes
   "model": "optional, harness-specific model id/alias",
   "background": true,
   "resumeOf": null,
-  "label": "optional human-readable name for this dispatch"
+  "label": "optional human-readable name for this dispatch",
+  "disclosure": {
+    "shown": ["facts or artifacts included in the prompt"],
+    "withheld": ["relevant facts intentionally not included"],
+    "parentOnly": ["strategy, hypotheses, or evaluation notes kept out of the prompt"],
+    "unverified": ["facts the receiving agent should not treat as established"]
+  }
 }
 ```
 
@@ -58,7 +87,7 @@ This skill is the discipline of doing that consistently: one declarative manifes
 One JSONL line per dispatch, written at launch time:
 
 ```json
-{"ts": "2026-08-04T18:00:00Z", "harness": "codex", "cwd": "...", "model": null, "resumeOf": null, "sessionId": "019f...", "label": "...", "status": "launched"}
+{"ts": "2026-08-04T18:00:00Z", "harness": "codex", "cwd": "...", "model": null, "resumeOf": null, "sessionId": "019f...", "label": "...", "status": "launched", "disclosure": {"shown": [], "withheld": [], "parentOnly": [], "unverified": []}}
 ```
 
 A regenerated summary/projection (not just the raw log) should back the actual query tool — the same event-log-plus-projection shape as any other durable operational record, not a flat file meant to be re-parsed from scratch every time.

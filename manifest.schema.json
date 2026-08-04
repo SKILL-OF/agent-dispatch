@@ -36,6 +36,34 @@
       "type": ["string", "null"],
       "default": null,
       "description": "Optional human-readable name for this dispatch, for ledger readability."
+    },
+    "disclosure": {
+      "type": ["object", "null"],
+      "default": null,
+      "description": "Prompt-disclosure record for agent-facing dispatch hygiene.",
+      "properties": {
+        "shown": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Facts, artifacts, labels, or examples included in the receiving agent's prompt."
+        },
+        "withheld": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Relevant facts intentionally omitted from the prompt to avoid contamination or because they were parent-side only."
+        },
+        "parentOnly": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parent strategy, hypotheses, evaluation criteria, or routing notes not shared with the receiving agent."
+        },
+        "unverified": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Claims the receiving agent should not treat as established evidence."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

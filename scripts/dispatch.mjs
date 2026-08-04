@@ -128,6 +128,7 @@ function loadManifest(args) {
     background: true,
     resumeOf: null,
     label: null,
+    disclosure: null,
     ...manifest,
     ...Object.fromEntries(Object.entries(args).filter(([k, v]) => v !== undefined && k !== 'manifestPath' && k !== 'ledgerDir')),
   };
@@ -261,6 +262,7 @@ function main() {
       model: manifest.model,
       resumeOf: manifest.resumeOf,
       label: manifest.label,
+      disclosure: manifest.disclosure,
       background: true,
       pid: child.pid,
       logPath,
@@ -289,6 +291,7 @@ function main() {
     model: manifest.model,
     resumeOf: manifest.resumeOf,
     label: manifest.label,
+    disclosure: manifest.disclosure,
     background: false,
     exitCode: result.status,
     sessionId,
