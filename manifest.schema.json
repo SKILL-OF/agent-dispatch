@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "agent-dispatch manifest",
+  "type": "object",
+  "required": ["harness", "cwd", "prompt"],
+  "properties": {
+    "harness": {
+      "type": "string",
+      "enum": ["claude", "codex", "copilot"],
+      "description": "Which CLI-agent harness to launch."
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Absolute path to the launch working directory. Must already exist and be a real named folder, not a bare '_' leaf."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The task text passed to the agent."
+    },
+    "model": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Harness-specific model id/alias. Independently settable on resume."
+    },
+    "background": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to launch detached (non-blocking) or wait for completion."
+    },
+    "resumeOf": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Session ID to resume from. null means a fresh dispatch. Never leave this implicit."
+    },
+    "label": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Optional human-readable name for this dispatch, for ledger readability."
+    }
+  },
+  "additionalProperties": false
+}
