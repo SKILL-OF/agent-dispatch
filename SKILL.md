@@ -1,8 +1,6 @@
 ---
 name: agent-dispatch
-description: Launch, resume, and track externally-launched CLI coding-agent sidecars (Claude Code, Codex, Copilot CLI) with consistent permissions, working directory, and telemetry
-scope: Any agent that needs to dispatch a genuinely separate CLI-agent process (not a same-thread subagent) and later answer "what did I launch, and did I ever resume it"
-trigger: Before shelling out to `claude`, `codex`, or `copilot` as a sidecar process, or before asking "has this session been resumed / what have I dispatched so far"
+description: Launch, resume, prompt, and track externally-launched CLI coding-agent sidecars (Claude Code, Codex, Copilot CLI) with consistent permissions, working directory, telemetry, disclosure-state records, and prompt-contamination hygiene. Use before shelling out to claude, codex, or copilot as a sidecar process; before asking what sessions were launched or resumed; or when composing prompts for separate agent processes where identity, continuity, model, role, or prior-context claims could be accidentally primed.
 ---
 
 # Agent Dispatch
@@ -27,13 +25,25 @@ This skill is the discipline of doing that consistently: one declarative manifes
 
 Before sending a prompt to another agent, separate parent-side control from child-facing context.
 
-- Keep stop conditions, evaluation criteria, and "what this proves" in the parent ledger unless the dispatched agent needs them to execute the task.
+- Keep parent strategy, private assessments, routing logic, evaluation criteria, and "what this proves" in the parent ledger unless the dispatched agent needs them to execute the task.
+- State evidence boundaries explicitly. Ask the agent to distinguish direct observations, supplied context, inference, uncertainty, and unavailable evidence.
 - Ask for direct observations before asking for interpretation. Prefer "what can you see, recall, or verify?" over "are you a fork, sidecar, or station?"
-- Do not prime identity labels, role names, card ids, model claims, promotion status, or expected conclusions unless those are already known to the dispatched agent or required for the work.
+- Do not prime identity labels, role names, card ids, model claims, promotion status, diagnoses, or expected conclusions unless those are already known to the dispatched agent or required for the work.
 - Do not use negated labels as a substitute for neutrality. "Do not claim X" still introduces X.
-- Do not ask a dispatched agent to justify its usefulness or continued existence. Ask what remains unresolved, what evidence it can preserve, or what next information would clarify the task.
+- Do not ask a dispatched agent to justify its usefulness or continued existence. Prefer bounded operational asks: status, evidence, uncertainty, gaps, and next handoff.
 - When a task concerns another agent's history or identity, use a two-pass prompt: first gather unstructured memory/evidence, then ask classification questions only after the agent has given its own account.
-- Record disclosure state in the ledger: what the agent was shown, what it was not shown, and which conclusions were parent-side only.
+- Give the agent the minimum operational envelope it needs: scope, output format, write permissions, contact permissions, and stop condition.
+- Record disclosure state in the ledger: what the agent was shown, what was withheld, what was parent-side-only, what was user-stated, and what remains unverified.
+
+Clean first prompt pattern:
+
+```text
+You are a research scout with prior context, but treat that context as unverified background.
+Investigate the assigned sources independently. First report direct observations with source
+locations; then separate inferences and uncertainties. Do not adopt candidate identities or
+conclusions supplied by the parent. Return a concise report with findings, gaps, and
+recommended next steps. Do not edit files or contact other agents unless explicitly authorized.
+```
 
 ## Manifest shape
 
@@ -45,7 +55,13 @@ Before sending a prompt to another agent, separate parent-side control from chil
   "model": "optional, harness-specific model id/alias",
   "background": true,
   "resumeOf": null,
-  "label": "optional human-readable name for this dispatch"
+  "label": "optional human-readable name for this dispatch",
+  "disclosure": {
+    "shown": ["facts or artifacts included in the prompt"],
+    "withheld": ["relevant facts intentionally not included"],
+    "parentOnly": ["strategy, hypotheses, or evaluation notes kept out of the prompt"],
+    "unverified": ["facts the receiving agent should not treat as established"]
+  }
 }
 ```
 
@@ -71,7 +87,7 @@ Before sending a prompt to another agent, separate parent-side control from chil
 One JSONL line per dispatch, written at launch time:
 
 ```json
-{"ts": "2026-08-04T18:00:00Z", "harness": "codex", "cwd": "...", "model": null, "resumeOf": null, "sessionId": "019f...", "label": "...", "status": "launched"}
+{"ts": "2026-08-04T18:00:00Z", "harness": "codex", "cwd": "...", "model": null, "resumeOf": null, "sessionId": "019f...", "label": "...", "status": "launched", "disclosure": {"shown": [], "withheld": [], "parentOnly": [], "unverified": []}}
 ```
 
 A regenerated summary/projection (not just the raw log) should back the actual query tool — the same event-log-plus-projection shape as any other durable operational record, not a flat file meant to be re-parsed from scratch every time.
