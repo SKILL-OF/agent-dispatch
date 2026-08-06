@@ -21,6 +21,77 @@ This skill is the discipline of doing that consistently: one declarative manifes
 6. **Don't confer a persistent identity (a 🍍/pineapple card, in this ecosystem's own terms) casually.** Dispatch produces a resumable session ID; that's a mechanical fact. Deciding a given dispatch deserves an ongoing, accountable identity — one that matters to the dispatching agent *and* signals something to the dispatched agent about its own durability — is a separate, deliberate decision this skill does not make automatically.
 7. **Treat prompt text as an experimental variable.** A dispatched agent's answer is shaped by what it has been shown. Track which facts, examples, labels, and candidate conclusions have been revealed, and do not contaminate an identity, continuity, or capability probe by naming the categories you hope to test.
 
+## Session and sidecar boundary rules
+
+Sidecar dispatch creates several independent axes that are easy to collapse if
+they are only remembered in prose. Keep these distinctions explicit in the
+manifest and ledger:
+
+- **Parent thread is not child session.** A Codex task, Claude transcript, or
+  Copilot chat may launch a separate CLI process whose session id, transcript,
+  cwd, permissions, and model are distinct from the parent even when the prompt
+  says "you are part of this project." Do not infer child continuity from the
+  parent task title, parent rollout id, or UI sidebar label.
+- **Same-thread subagents are not CLI sidecars.** In-harness subagent tools may
+  create rollout/transcript artifacts and may show up in lineage scans, but they
+  are not resumable external CLI sessions unless a concrete CLI session id was
+  launched and recorded by this skill.
+- **A sidecar transcript is not durable identity.** A session id means the
+  harness created a resumable mechanical conversation. Durable identity requires
+  an explicit assignment, scope, authority, and disposal rule. Until then, record
+  `durableIdentity: "none"` or `"candidate"` rather than promoting the sidecar
+  by implication.
+- **Resume targets must be exact.** Resuming by "the chat about X," a UI title,
+  a root-session id, a latest rollout file, or a card label is ambiguous. Resume
+  only from a recorded child `sessionId`/`dispatchId` pair, and record the
+  parent-side evidence used to choose it.
+- **Model changes on resume do not imply identity changes.** Changing model tier
+  may be intentional recovery from a stuck reasoning loop. Record it as a model
+  transition on the same child session unless the operator deliberately assigns
+  a new durable identity.
+- **A fresh task created by a scheduler is not automatically a child of the
+  prior one.** Existing-chat scheduled heartbeats and new-session relay tasks
+  have different continuity semantics. Record whether the dispatch was intended
+  to resume an existing session, create a fresh relay, or merely notify a parent.
+- **Permission probes belong before trust.** Before asking a sidecar to mutate
+  repos, verify `whoami`, cwd, git remote, `gh auth status`, branch, sandbox, and
+  whether local credentials are visible under that harness. Many failures
+  presenting as "agent refusal" are actually OS principal, sandbox, or cwd
+  mismatch.
+
+If a dispatch was created accidentally — wrong harness, wrong cwd, wrong session
+id, background process left running, same prompt launched twice, or Codex/Claude
+generated a sidecar rollout when a same-thread helper was intended — do not
+paper over it. Add a ledger event with:
+
+```json
+{
+  "sessionBoundary": {
+    "parentSessionId": "known parent thread/session id, if any",
+    "parentRolloutId": "known rollout/transcript id, if any",
+    "expected": "fresh | resume | same-thread | unknown",
+    "sidecarIntent": "intentional | accidental | unknown",
+    "durableIdentity": "none | candidate | assigned",
+    "durableIdentityRef": null,
+    "disposition": "active | discarded | promoted | superseded | needs-review",
+    "notes": "bounded reason and evidence"
+  }
+}
+```
+
+Then choose one disposition:
+
+- `discarded`: do not resume; keep only the audit record.
+- `superseded`: another dispatch replaced it; link the replacement dispatch id.
+- `active`: continue using it as a mechanical sidecar, without durable identity.
+- `promoted`: durable identity was deliberately assigned elsewhere; link that
+  authority, not just the session id.
+- `needs-review`: stop automated continuation until a human or routing owner
+  decides whether to keep it.
+
+Do not delete the ledger line to make the mistake disappear. The operational
+hazard is the untracked sidecar, not the existence of evidence.
+
 ## Prompt hygiene for agent-facing dispatch
 
 Before sending a prompt to another agent, separate parent-side control from child-facing context.
@@ -56,6 +127,16 @@ recommended next steps. Do not edit files or contact other agents unless explici
   "background": true,
   "resumeOf": null,
   "label": "optional human-readable name for this dispatch",
+  "sessionBoundary": {
+    "parentSessionId": "optional parent task/session id",
+    "parentRolloutId": "optional parent rollout/transcript id",
+    "expected": "fresh | resume | same-thread | unknown",
+    "sidecarIntent": "intentional | accidental | unknown",
+    "durableIdentity": "none | candidate | assigned",
+    "durableIdentityRef": null,
+    "disposition": "active | discarded | promoted | superseded | needs-review",
+    "notes": "optional evidence summary"
+  },
   "disclosure": {
     "shown": ["facts or artifacts included in the prompt"],
     "withheld": ["relevant facts intentionally not included"],
@@ -91,6 +172,11 @@ One JSONL line per dispatch, written at launch time:
 ```
 
 A regenerated summary/projection (not just the raw log) should back the actual query tool — the same event-log-plus-projection shape as any other durable operational record, not a flat file meant to be re-parsed from scratch every time.
+
+The ledger must preserve `sessionBoundary` when present. This is the field that
+lets a later operator answer "was this an intentional durable subagent, an
+accidental sidecar, or just a mechanical resume?" without rereading the parent
+thread and child transcript together.
 
 ## Explicitly out of scope for this skill
 
