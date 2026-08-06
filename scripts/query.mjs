@@ -54,7 +54,10 @@ function main() {
     const kind = r.resumeOf ? `RESUME of ${r.resumeOf}` : 'FRESH';
     const model = r.model ? ` model=${r.model}` : '';
     const label = r.label ? ` "${r.label}"` : '';
-    console.log(`${r.ts}  ${r.harness.padEnd(7)}  ${kind}${model}${label}  sessionId=${r.sessionId ?? '(pending)'}  event=${r.event}`);
+    const boundary = r.sessionBoundary
+      ? ` boundary=${r.sessionBoundary.sidecarIntent ?? 'unknown'}/${r.sessionBoundary.durableIdentity ?? 'unknown'}/${r.sessionBoundary.disposition ?? 'unknown'}`
+      : '';
+    console.log(`${r.ts}  ${r.harness.padEnd(7)}  ${kind}${model}${label}  sessionId=${r.sessionId ?? '(pending)'}  event=${r.event}${boundary}`);
   }
   console.log(`\n${records.length} record(s) matched.`);
 }

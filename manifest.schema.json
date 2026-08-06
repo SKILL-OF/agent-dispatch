@@ -37,6 +37,58 @@
       "default": null,
       "description": "Optional human-readable name for this dispatch, for ledger readability."
     },
+    "sessionBoundary": {
+      "type": ["object", "null"],
+      "default": null,
+      "description": "Explicit parent/child/session/identity boundary record. Use this to distinguish mechanical sidecar sessions from durable identities and to disposition accidental sidecars.",
+      "properties": {
+        "parentSessionId": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Known parent task/session/thread id, if any. This is not the child session id."
+        },
+        "parentRolloutId": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Known parent rollout/transcript id, if any. This is evidence only, not a resume target unless the harness says so."
+        },
+        "expected": {
+          "type": "string",
+          "enum": ["fresh", "resume", "same-thread", "unknown"],
+          "default": "unknown",
+          "description": "What continuity semantics the dispatcher intended before launch."
+        },
+        "sidecarIntent": {
+          "type": "string",
+          "enum": ["intentional", "accidental", "unknown"],
+          "default": "unknown",
+          "description": "Whether creation of a separate external process/session was intended."
+        },
+        "durableIdentity": {
+          "type": "string",
+          "enum": ["none", "candidate", "assigned"],
+          "default": "none",
+          "description": "Whether the child has a deliberate durable identity beyond its mechanical session id."
+        },
+        "durableIdentityRef": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Reference to the authority assigning durable identity, when durableIdentity is assigned or candidate."
+        },
+        "disposition": {
+          "type": "string",
+          "enum": ["active", "discarded", "promoted", "superseded", "needs-review"],
+          "default": "active",
+          "description": "Operational disposition of this sidecar/session record."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Bounded evidence summary for why this boundary/disposition was recorded."
+        }
+      },
+      "additionalProperties": false
+    },
     "disclosure": {
       "type": ["object", "null"],
       "default": null,
