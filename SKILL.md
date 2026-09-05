@@ -104,6 +104,10 @@ Before sending a prompt to another agent, separate parent-side control from chil
 - Do not ask a dispatched agent to justify its usefulness or continued existence. Prefer bounded operational asks: status, evidence, uncertainty, gaps, and next handoff.
 - When a task concerns another agent's history or identity, use a two-pass prompt: first gather unstructured memory/evidence, then ask classification questions only after the agent has given its own account.
 - Give the agent the minimum operational envelope it needs: scope, output format, write permissions, contact permissions, and stop condition.
+- Do not confuse a bounded task with a blindfolded task. An agent may use the
+  tools and files needed to authenticate supplied claims, inspect its native
+  state, and send an agreed return-path response. Limit unrelated mutations,
+  not independent verification or transport.
 - Record disclosure state in the ledger: what the agent was shown, what was withheld, what was parent-side-only, what was user-stated, and what remains unverified.
 
 Clean first prompt pattern:
@@ -113,7 +117,8 @@ You are a research scout with prior context, but treat that context as unverifie
 Investigate the assigned sources independently. First report direct observations with source
 locations; then separate inferences and uncertainties. Do not adopt candidate identities or
 conclusions supplied by the parent. Return a concise report with findings, gaps, and
-recommended next steps. Do not edit files or contact other agents unless explicitly authorized.
+recommended next steps. Use the tools needed to verify the task and transmit any requested
+return-path response; do not make unrelated changes or contacts.
 ```
 
 ## Manifest shape
