@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {decide} from './topology-guard.mjs';
+const policy={officeRoots:['C:/office'],deniedTools:['mcp__codex_app__create_thread','mcp__codex_app__fork_thread'],readOnlyProbe:false,probeTool:'mcp__codex_app__list_projects'};
+const event=tool_name=>({hook_event_name:'PreToolUse',cwd:'C:/office',tool_name});
+test('reject both peer creation paths',()=>{for(const name of policy.deniedTools) assert.ok(decide(event(name),policy));});
+test('reject peers in descendants and case variants',()=>assert.ok(decide({...event(policy.deniedTools[0]),cwd:'c:/OFFICE/child'},policy)));
+test('do not capture similarly prefixed office',()=>assert.equal(decide({...event(policy.deniedTools[0]),cwd:'C:/office-other'},policy),null));
+test('nested creation and continuation remain available',()=>{for(const name of ['collaborationspawn_agent','collaborationfollowup_task','collaborationsend_message']) assert.equal(decide(event(name),policy),null);});
+test('ordinary reads and existing peer contact remain available',()=>{for(const name of [policy.probeTool,'mcp__codex_app__send_message_to_thread']) assert.equal(decide(event(name),policy),null);});
+test('read-only canary exercises same decision path',()=>assert.match(decide(event(policy.probeTool),{...policy,readOnlyProbe:true}),/CANARY/));
